@@ -5,6 +5,7 @@ import com.ss.utopia.restapi.models.Passenger;
 import com.ss.utopia.restapi.services.ResetAutoCounterService;
 
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,21 +22,38 @@ public class PassengerController {
     ResetAutoCounterService resetService;
 
     @GetMapping(path="/{id}")
-    public Passenger getPassenger(@PathVariable int id) throws ResponseStatusException {
-        return passengerDB
+    public ResponseEntity<Passenger> getPassenger(@PathVariable int id) throws ResponseStatusException {
+        return new ResponseEntity<>(passengerDB
             .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passenger not found!"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passenger not found!")),
+            HttpStatus.OK
+        );
     }
 
-    @GetMapping(path="/all")
-    public Iterable<Passenger> getAllPassengers() {
-        return passengerDB.findAll();
+    @GetMapping(path={"/all", ""})
+    public ResponseEntity<Iterable<Passenger>> getAllPassengers() {
+        return new ResponseEntity<>(
+            passengerDB.findAll(),
+            HttpStatus.OK
+        );
     }
 
     @PostMapping(path = "")
     public ResponseEntity<?> createPassenger(@RequestBody Passenger passenger) {
-        resetService.resetAutoCounter("passenger");
-        return new ResponseEntity<>(passengerDB.save(passenger), HttpStatus.OK);
+        try {
+            resetService.resetAutoCounter("passenger");
+            return new ResponseEntity<>(passengerDB.save(passenger), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
     @PutMapping(path = "/{id}")
@@ -51,8 +69,20 @@ public class PassengerController {
         passenger.setGivenName(passengerDetails.getGivenName());
         passenger.setBooking(passengerDetails.getBooking());
 
-        Passenger updatedPassenger = passengerDB.save(passenger);
-        return new ResponseEntity<>(updatedPassenger, HttpStatus.OK);
+        try {
+            Passenger updatedPassenger = passengerDB.save(passenger);
+            return new ResponseEntity<>(updatedPassenger, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -61,8 +91,20 @@ public class PassengerController {
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passenger could not be found!"));
 
-        passengerDB.delete(passenger);
-        resetService.resetAutoCounter("passenger");
-        return new ResponseEntity<>(passenger, HttpStatus.OK);
+        try {
+            passengerDB.delete(passenger);
+            resetService.resetAutoCounter("passenger");
+            return new ResponseEntity<>(passenger, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 }

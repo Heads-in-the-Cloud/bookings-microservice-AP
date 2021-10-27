@@ -5,6 +5,7 @@ import com.ss.utopia.restapi.models.Booking;
 import com.ss.utopia.restapi.services.ResetAutoCounterService;
 
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,21 +22,38 @@ public class BookingController {
     ResetAutoCounterService resetService;
 
     @GetMapping(path="/{id}")
-    public Booking getBooking(@PathVariable int id) throws ResponseStatusException {
-        return bookingDB
+    public ResponseEntity<Booking> getBooking(@PathVariable int id) throws ResponseStatusException {
+        return new ResponseEntity<>(bookingDB
             .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking not found!"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking not found!")),
+            HttpStatus.OK
+        );
     }
 
     @GetMapping(path="/all")
-    public Iterable<Booking> getAllBookings() {
-        return bookingDB.findAll();
+    public ResponseEntity<Iterable<Booking>> getAllBookings() {
+        return new ResponseEntity<>(
+            bookingDB.findAll(),
+            HttpStatus.OK
+        );
     }
 
     @PostMapping(path = "")
     public ResponseEntity<?> createBooking(@RequestBody Booking booking) {
-        resetService.resetAutoCounter("booking");
-        return new ResponseEntity<>(bookingDB.save(booking), HttpStatus.OK);
+        try {
+            resetService.resetAutoCounter("booking");
+            return new ResponseEntity<>(bookingDB.save(booking), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
     @PutMapping(path="/{id}")
@@ -48,8 +66,20 @@ public class BookingController {
         booking.setIsActive(bookingDetails.getIsActive());
         booking.setConfirmationCode(bookingDetails.getConfirmationCode());
 
-        Booking updatedBooking = bookingDB.save(booking);
-        return new ResponseEntity<>(updatedBooking, HttpStatus.OK);
+        try {
+            Booking updatedBooking = bookingDB.save(booking);
+            return new ResponseEntity<>(updatedBooking, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
     @DeleteMapping("/{id}")
@@ -58,8 +88,20 @@ public class BookingController {
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking could not be found!"));
 
-        bookingDB.delete(booking);
-        resetService.resetAutoCounter("booking");
-        return new ResponseEntity<>(booking, HttpStatus.OK);
+        try {
+            bookingDB.delete(booking);
+            resetService.resetAutoCounter("booking");
+            return new ResponseEntity<>(booking, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 }

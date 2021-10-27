@@ -11,7 +11,7 @@ public class Flight {
     @Id
     @Column(name = "id", nullable = false, unique = true)
     @Unsigned
-    private int id;
+    private Integer id;
 
     @ManyToOne
     @JoinColumn(name = "route_id", referencedColumnName = "id", nullable = false)
@@ -31,8 +31,8 @@ public class Flight {
     @Column(name = "seat_price", nullable = false)
     private float seatPrice;
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
     public float getSeatPrice() { return seatPrice; }
     public void setSeatPrice(float seatPrice) { this.seatPrice = seatPrice; }

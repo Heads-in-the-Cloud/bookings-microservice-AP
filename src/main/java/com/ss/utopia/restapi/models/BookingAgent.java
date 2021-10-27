@@ -6,7 +6,7 @@ import javax.persistence.*;
 public class BookingAgent {
     @Id
     @Column(name = "booking_id", nullable = false)
-    private int bookingId;
+    private Integer bookingId;
 
     @OneToOne
     @MapsId

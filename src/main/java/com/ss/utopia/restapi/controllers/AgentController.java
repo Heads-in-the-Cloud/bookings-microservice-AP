@@ -7,13 +7,14 @@ import com.ss.utopia.restapi.models.BookingAgent;
 import com.ss.utopia.restapi.models.User;
 
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping(path="/bookings")
+@RequestMapping(path="/booking-agents")
 public class AgentController {
 
     @Autowired
@@ -22,19 +23,24 @@ public class AgentController {
     @Autowired
     BookingRepository bookingRepository;
 
-    @GetMapping(path="/{id}/agent")
-    public BookingAgent getBookingAgent(@PathVariable int id) throws ResponseStatusException {
-        return bookingAgentDB
+    @GetMapping(path="/{id}")
+    public ResponseEntity<BookingAgent> getBookingAgent(@PathVariable int id) throws ResponseStatusException {
+        return new ResponseEntity<>(bookingAgentDB
             .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingAgent not found!"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingAgent not found!")),
+            HttpStatus.OK
+        );
     }
 
-    @GetMapping(path="/all/agents")
-    public Iterable<BookingAgent> getAllBookingAgents() {
-        return bookingAgentDB.findAll();
+    @GetMapping(path={"/all", ""})
+    public ResponseEntity<Iterable<BookingAgent>> getAllBookingAgents() {
+        return new ResponseEntity<>(
+            bookingAgentDB.findAll(),
+            HttpStatus.OK
+        );
     }
 
-    @PostMapping(path = "/{id}/agent")
+    @PostMapping(path = "/{id}")
     public ResponseEntity<?> createBookingAgent(@PathVariable int id, @RequestBody User agent) {
         BookingAgent bookingAgent = new BookingAgent();
         Booking booking = bookingRepository
@@ -43,10 +49,23 @@ public class AgentController {
 
         bookingAgent.setBooking(booking);
         bookingAgent.setAgent(agent);
-        return new ResponseEntity<>(bookingAgentDB.save(bookingAgent), HttpStatus.OK);
+
+        try {
+            return new ResponseEntity<>(bookingAgentDB.save(bookingAgent), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
-    @PutMapping(path="/{id}/agent")
+    @PutMapping(path="/{id}")
     public ResponseEntity<?> updateBookingAgent(@PathVariable int id, @RequestBody User agent) throws ResponseStatusException {
         BookingAgent bookingAgent = bookingAgentDB
             .findById(id)
@@ -55,17 +74,41 @@ public class AgentController {
 
         bookingAgent.setAgent(agent);
 
-        BookingAgent updatedBookingAgent = bookingAgentDB.save(bookingAgent);
-        return new ResponseEntity<>(updatedBookingAgent, HttpStatus.OK);
+        try {
+            BookingAgent updatedBookingAgent = bookingAgentDB.save(bookingAgent);
+            return new ResponseEntity<>(updatedBookingAgent, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
-    @DeleteMapping("/{id}/agent")
+    @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBookingAgent(@PathVariable int id) throws ResponseStatusException {
         BookingAgent bookingAgent = bookingAgentDB
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingAgent could not be found!"));
 
-        bookingAgentDB.delete(bookingAgent);
-        return new ResponseEntity<>(bookingAgent, HttpStatus.OK);
+        try {
+            bookingAgentDB.delete(bookingAgent);
+            return new ResponseEntity<>(bookingAgent, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 }

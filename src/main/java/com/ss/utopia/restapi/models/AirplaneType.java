@@ -11,14 +11,14 @@ public class AirplaneType {
     @Id
     @Column(name = "id", nullable = false, unique = true)
     @Unsigned
-    private int id;
+    private Integer id;
 
     @Column(name = "max_capacity", nullable = false, unique = true)
     @Unsigned
     private int maxCapacity;
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
     public int getMaxCapacity() { return maxCapacity; }
     public void setMaxCapacity(int maxCapacity) { this.maxCapacity = maxCapacity; }

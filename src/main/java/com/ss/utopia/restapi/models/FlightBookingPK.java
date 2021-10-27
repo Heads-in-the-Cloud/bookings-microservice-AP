@@ -16,6 +16,9 @@ public class FlightBookingPK implements Serializable {
         this.booking = booking;
     }
 
+    public int getFlight() { return flight; };
+    public int getBooking() { return booking; };
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof FlightBookingPK) {

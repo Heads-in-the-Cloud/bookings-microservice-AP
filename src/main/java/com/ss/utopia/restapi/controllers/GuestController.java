@@ -6,13 +6,22 @@ import com.ss.utopia.restapi.models.Booking;
 import com.ss.utopia.restapi.models.BookingGuest;
 
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+// Data transfer object
+class Guest {
+    public String email;
+    public String phone;
+
+    public Guest() {}
+}
+
 @RestController
-@RequestMapping(path="/bookings")
+@RequestMapping(path="/booking-guests")
 public class GuestController {
 
     @Autowired
@@ -21,25 +30,19 @@ public class GuestController {
     @Autowired
     BookingRepository bookingRepository;
 
-    // Data transfer object
-    class Guest {
-        public String email;
-        public String phone;
-    }
-
-    @GetMapping(path="/{id}/guest")
+    @GetMapping(path="/{id}")
     public BookingGuest getBookingGuest(@PathVariable int id) throws ResponseStatusException {
         return bookingGuestDB
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingGuest not found!"));
     }
 
-    @GetMapping(path="/all/guests")
+    @GetMapping(path={"/all", ""})
     public Iterable<BookingGuest> getAllBookingGuests() {
         return bookingGuestDB.findAll();
     }
 
-    @PostMapping(path = "/{id}/guest")
+    @PostMapping(path = "/{id}")
     public ResponseEntity<?> createBookingGuest(@PathVariable int id, @RequestBody Guest guest) {
         BookingGuest bookingGuest = new BookingGuest();
         Booking booking = bookingRepository.findById(id)
@@ -48,10 +51,23 @@ public class GuestController {
         bookingGuest.setBooking(booking);
         bookingGuest.setEmail(guest.email);
         bookingGuest.setPhone(guest.phone);
-        return new ResponseEntity<>(bookingGuestDB.save(bookingGuest), HttpStatus.OK);
+
+        try {
+            return new ResponseEntity<>(bookingGuestDB.save(bookingGuest), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
-    @PutMapping(path="/{id}/guest")
+    @PutMapping(path="/{id}")
     public ResponseEntity<?> updateBookingGuest(@PathVariable int id, @RequestBody Guest guest) throws ResponseStatusException {
         BookingGuest bookingGuest = bookingGuestDB
             .findById(id)
@@ -61,17 +77,41 @@ public class GuestController {
         bookingGuest.setEmail(guest.email);
         bookingGuest.setPhone(guest.phone);
 
-        BookingGuest updatedBookingGuest = bookingGuestDB.save(bookingGuest);
-        return new ResponseEntity<>(updatedBookingGuest, HttpStatus.OK);
+        try {
+            BookingGuest updatedBookingGuest = bookingGuestDB.save(bookingGuest);
+            return new ResponseEntity<>(updatedBookingGuest, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
-    @DeleteMapping("/{id}/guest")
+    @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBookingGuest(@PathVariable int id) throws ResponseStatusException {
         BookingGuest bookingGuest = bookingGuestDB
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingGuest could not be found!"));
 
-        bookingGuestDB.delete(bookingGuest);
-        return new ResponseEntity<>(bookingGuest, HttpStatus.OK);
+        try {
+            bookingGuestDB.delete(bookingGuest);
+            return new ResponseEntity<>(bookingGuest, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 }

@@ -9,13 +9,14 @@ import com.ss.utopia.restapi.models.FlightBookingPK;
 import com.ss.utopia.restapi.models.FlightBookings;
 
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping(path="/booking")
+@RequestMapping(path="/flight-bookings")
 public class FlightBookingsController {
 
     @Autowired
@@ -27,48 +28,94 @@ public class FlightBookingsController {
     @Autowired
     FlightRepository flightsDB;
 
-    @GetMapping(path = "/{bookingId}/flight/{flightId}")
-    public FlightBookings getFlightBookings(@PathVariable int bookingId, @PathVariable int flightId)
+    @GetMapping(path = {
+        "/flight/{flightId}/booking/{bookingId}",
+        "/booking/{bookingId}/flight/{flightId}"
+    })
+    public ResponseEntity<FlightBookings> getFlightBookings(@PathVariable int bookingId, @PathVariable int flightId)
             throws ResponseStatusException {
-        return flightBookingsDB.findById(new FlightBookingPK(flightId, bookingId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "FlightBookings not found!"));
+        return new ResponseEntity<>(
+            flightBookingsDB.findById(
+                new FlightBookingPK(flightId, bookingId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "FlightBookings not found!")),
+                HttpStatus.OK
+            );
     }
 
-    @GetMapping(path="/{id}/flight/all")
-    public Iterable<FlightBookings> getFlightBookingsByBookings(@PathVariable int id) {
-        return flightBookingsDB.findAllByBookingId(id);
+    @GetMapping(path="/booking/{id}")
+    public ResponseEntity<Iterable<FlightBookings>> getFlightBookingsByBookings(@PathVariable int id) {
+        return new ResponseEntity<>(
+            flightBookingsDB.findAllByBookingId(id),
+            HttpStatus.OK
+        );
     }
 
-    @GetMapping(path="/all/flight/{id}")
-    public Iterable<FlightBookings> getFlightBookingsByFlights(@PathVariable int id) {
-        return flightBookingsDB.findAllByFlightId(id);
+    @GetMapping(path="/flight/{id}")
+    public ResponseEntity<Iterable<FlightBookings>> getFlightBookingsByFlights(@PathVariable int id) {
+        return new ResponseEntity<>(
+            flightBookingsDB.findAllByFlightId(id),
+            HttpStatus.OK
+        );
     }
 
-    @GetMapping(path="/all/flight/all")
-    public Iterable<FlightBookings> getAllFlightBookingss() {
-        return flightBookingsDB.findAll();
+    @GetMapping(path={"/all", ""})
+    public ResponseEntity<Iterable<FlightBookings>> getAllFlightBookingss() {
+        return new ResponseEntity<>(
+            flightBookingsDB.findAll(),
+            HttpStatus.OK
+        );
     }
 
-    @PostMapping(path = "/{bookingId}/flight/{flightId}")
-    public ResponseEntity<?> createFlightBookings(@PathVariable int bookingId, @PathVariable int flightId) {
+    @PostMapping(path = "")
+    public ResponseEntity<?> createFlightBookings(@RequestBody FlightBookingPK flightBookingPK) {
         Booking booking = bookingRepository
-            .findById(bookingId)
+            .findById(flightBookingPK.getBooking())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking not found!"));
         Flight flight = flightsDB
-            .findById(flightId)
+            .findById(flightBookingPK.getFlight())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Flight not found!"));
 
-        return new ResponseEntity<>(flightBookingsDB.save(new FlightBookings(flight, booking)), HttpStatus.OK);
+        try {
+            return new ResponseEntity<>(flightBookingsDB.save(new FlightBookings(flight, booking)), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
-    @DeleteMapping("/{bookingId}/flight/{flightId}")
+    @DeleteMapping(path={
+        "/flight/{flightId}/booking/{bookingId}",
+        "/booking/{bookingId}/flight/{flightId}"
+    })
     public ResponseEntity<?> deleteFlightBookings(@PathVariable int bookingId, @PathVariable int flightId)
             throws ResponseStatusException {
-        FlightBookings flightBookings = flightBookingsDB.findById(new FlightBookingPK(flightId, bookingId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "FlightBookings could not be found!"));
+        FlightBookings flightBookings = flightBookingsDB
+            .findById(new FlightBookingPK(flightId, bookingId))
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "FlightBookings could not be found!")
+            );
 
-        flightBookingsDB.delete(flightBookings);
-        return new ResponseEntity<>(flightBookings, HttpStatus.OK);
+        try {
+            flightBookingsDB.delete(flightBookings);
+            return new ResponseEntity<>(flightBookings, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 }

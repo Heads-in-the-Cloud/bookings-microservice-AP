@@ -7,16 +7,17 @@ import jdk.jfr.Unsigned;
 @Entity(name = "airplane")
 public class Airplane {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, unique = true)
     @Unsigned
-    private int id;
+    private Integer id;
 
     @ManyToOne
     @JoinColumn(name = "type_id")
     private AirplaneType airplaneType;
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
     public AirplaneType getAirplaneType() { return airplaneType; }
     public void setAirplaneType(AirplaneType airplaneType) { this.airplaneType = airplaneType; }

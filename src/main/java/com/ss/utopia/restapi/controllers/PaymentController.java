@@ -6,13 +6,20 @@ import com.ss.utopia.restapi.models.Booking;
 import com.ss.utopia.restapi.models.BookingPayment;
 
 import org.springframework.beans.factory.annotation.*;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+// Data transfer object
+class Payment {
+    public Boolean refunded;
+    public String stripeId;
+}
+
 @RestController
-@RequestMapping(path="/bookings")
+@RequestMapping(path="/booking-payments")
 public class PaymentController {
 
     @Autowired
@@ -21,25 +28,24 @@ public class PaymentController {
     @Autowired
     BookingRepository bookingRepository;
 
-    // Data transfer object
-    class Payment {
-        public Boolean refunded;
-        public String stripeId;
-    }
-
-    @GetMapping(path="/{id}/payment")
-    public BookingPayment getBookingPayment(@PathVariable int id) throws ResponseStatusException {
-        return bookingPaymentDB
+    @GetMapping(path="/{id}")
+    public ResponseEntity<BookingPayment> getBookingPayment(@PathVariable int id) throws ResponseStatusException {
+        return new ResponseEntity<>(bookingPaymentDB
             .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingPayment not found!"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingPayment not found!")),
+            HttpStatus.OK
+        );
     }
 
-    @GetMapping(path="/all/payments")
-    public Iterable<BookingPayment> getAllBookingPayments() {
-        return bookingPaymentDB.findAll();
+    @GetMapping(path={"/all", ""})
+    public ResponseEntity<Iterable<BookingPayment>> getAllBookingPayments() {
+        return new ResponseEntity<>(
+            bookingPaymentDB.findAll(),
+            HttpStatus.OK
+        );
     }
 
-    @PostMapping(path = "/{id}/payment")
+    @PostMapping(path = "/{id}")
     public ResponseEntity<?> createBookingPayment(@PathVariable int id, @RequestBody Payment payment) {
         BookingPayment bookingPayment = new BookingPayment();
         Booking booking = bookingRepository
@@ -49,10 +55,23 @@ public class PaymentController {
         bookingPayment.setBooking(booking);
         bookingPayment.setRefunded(payment.refunded);
         bookingPayment.setStripeId(payment.stripeId);
-        return new ResponseEntity<>(bookingPaymentDB.save(bookingPayment), HttpStatus.OK);
+
+        try {
+            return new ResponseEntity<>(bookingPaymentDB.save(bookingPayment), HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
-    @PutMapping(path="/{id}/payment")
+    @PutMapping(path="/{id}")
     public ResponseEntity<?> updateBookingPayment(@PathVariable int id, @RequestBody Payment payment) throws ResponseStatusException {
         BookingPayment bookingPayment = bookingPaymentDB
             .findById(id)
@@ -62,17 +81,41 @@ public class PaymentController {
         bookingPayment.setRefunded(payment.refunded);
         bookingPayment.setStripeId(payment.stripeId);
 
-        BookingPayment updatedBookingPayment = bookingPaymentDB.save(bookingPayment);
-        return new ResponseEntity<>(updatedBookingPayment, HttpStatus.OK);
+        try {
+            BookingPayment updatedBookingPayment = bookingPaymentDB.save(bookingPayment);
+            return new ResponseEntity<>(updatedBookingPayment, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 
-    @DeleteMapping("/{id}/payment")
+    @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteBookingPayment(@PathVariable int id) throws ResponseStatusException {
         BookingPayment bookingPayment = bookingPaymentDB
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingPayment could not be found!"));
 
-        bookingPaymentDB.delete(bookingPayment);
-        return new ResponseEntity<>(bookingPayment, HttpStatus.OK);
+        try {
+            bookingPaymentDB.delete(bookingPayment);
+            return new ResponseEntity<>(bookingPayment, HttpStatus.NO_CONTENT);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        } catch (DataIntegrityViolationException e) {
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                e.getMessage()
+            );
+        }
     }
 }

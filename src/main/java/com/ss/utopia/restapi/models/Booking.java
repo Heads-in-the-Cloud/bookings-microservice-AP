@@ -10,7 +10,7 @@ import jdk.jfr.Unsigned;
 public class Booking implements Serializable {
     @Id()
     @Unsigned
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, unique = true)
     private Integer id;
 
@@ -22,14 +22,14 @@ public class Booking implements Serializable {
 
     public Booking() {};
 
-    public Booking(int id, boolean isActive, String code) {
+    public Booking(Integer id, boolean isActive, String code) {
         this.id = id;
         this.isActive = isActive;
         this.confirmationCode = code;
     }
 
-    public int getId() { return id; }
-    public void setId(int id) { this.id = id; }
+    public Integer getId() { return id; }
+    public void setId(Integer id) { this.id = id; }
 
     public boolean getIsActive() { return isActive; }
     public void setIsActive(boolean isActive) { this.isActive = isActive; }
