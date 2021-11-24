@@ -30,7 +30,7 @@ public class BookingController {
         );
     }
 
-    @GetMapping(path="/all")
+    @GetMapping(path={"/all", ""})
     public ResponseEntity<Iterable<Booking>> getAllBookings() {
         return new ResponseEntity<>(
             bookingDB.findAll(),

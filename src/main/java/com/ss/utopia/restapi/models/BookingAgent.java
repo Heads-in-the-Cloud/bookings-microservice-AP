@@ -3,16 +3,14 @@ package com.ss.utopia.restapi.models;
 import javax.persistence.*;
 
 @Entity(name = "booking_agent")
+@IdClass(BookingAgentPK.class)
 public class BookingAgent {
     @Id
-    @Column(name = "booking_id", nullable = false)
-    private Integer bookingId;
-
-    @OneToOne
-    @MapsId
+    @ManyToOne
     @JoinColumn(name = "booking_id", nullable = false, unique = true)
     private Booking booking;
 
+    @Id
     @ManyToOne
     @JoinColumn(name = "agent_id", nullable = false)
     private User agent;

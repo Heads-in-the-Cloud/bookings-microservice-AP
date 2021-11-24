@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 // Data transfer object
 class Payment {
+    public int booking;
     public Boolean refunded;
     public String stripeId;
 }
@@ -45,11 +46,11 @@ public class PaymentController {
         );
     }
 
-    @PostMapping(path = "/{id}")
-    public ResponseEntity<?> createBookingPayment(@PathVariable int id, @RequestBody Payment payment) {
+    @PostMapping(path = "")
+    public ResponseEntity<?> createBookingPayment(@RequestBody Payment payment) {
         BookingPayment bookingPayment = new BookingPayment();
         Booking booking = bookingRepository
-            .findById(id)
+            .findById(payment.booking)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking not found!"));
 
         bookingPayment.setBooking(booking);

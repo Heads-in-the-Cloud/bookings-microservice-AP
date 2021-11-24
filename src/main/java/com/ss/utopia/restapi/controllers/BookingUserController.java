@@ -1,9 +1,11 @@
 package com.ss.utopia.restapi.controllers;
 
 import com.ss.utopia.restapi.dao.BookingUserRepository;
+import com.ss.utopia.restapi.dao.UserRepository;
 import com.ss.utopia.restapi.dao.BookingRepository;
 import com.ss.utopia.restapi.models.Booking;
 import com.ss.utopia.restapi.models.BookingUser;
+import com.ss.utopia.restapi.models.BookingUserPK;
 import com.ss.utopia.restapi.models.User;
 
 import org.springframework.beans.factory.annotation.*;
@@ -23,11 +25,35 @@ public class BookingUserController {
     @Autowired
     BookingRepository bookingRepository;
 
-    @GetMapping(path="/{id}")
-    public ResponseEntity<BookingUser> getBookingUser(@PathVariable int id) throws ResponseStatusException {
-        return new ResponseEntity<>(bookingUserDB
-            .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingUser not found!")),
+    @Autowired
+    UserRepository userRepository;
+
+    @GetMapping(path = {
+        "/user/{userId}/booking/{bookingId}",
+        "/booking/{bookingId}/user/{userId}"
+    })
+    public ResponseEntity<BookingUser> getBookingUsers(@PathVariable int bookingId, @PathVariable int userId)
+            throws ResponseStatusException {
+        return new ResponseEntity<>(
+            bookingUserDB.findById(
+                new BookingUserPK(bookingId, userId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingUsers not found!")),
+                HttpStatus.OK
+            );
+    }
+
+    @GetMapping(path="/booking/{id}")
+    public ResponseEntity<Iterable<BookingUser>> getBookingUsersByBooking(@PathVariable int id) {
+        return new ResponseEntity<>(
+            bookingUserDB.findAllByBookingId(id),
+            HttpStatus.OK
+        );
+    }
+
+    @GetMapping(path="/user/{id}")
+    public ResponseEntity<Iterable<BookingUser>> getBookingUsersByUser(@PathVariable int id) {
+        return new ResponseEntity<>(
+            bookingUserDB.findAllByBookingId(id),
             HttpStatus.OK
         );
     }
@@ -40,11 +66,14 @@ public class BookingUserController {
         );
     }
 
-    @PostMapping(path = "/{id}")
-    public ResponseEntity<?> createBookingUser(@PathVariable int id, @RequestBody User user) {
+    @PostMapping(path = "")
+    public ResponseEntity<?> createBookingUser(@RequestBody BookingUserPK bookingUserPK) {
         BookingUser bookingUser = new BookingUser();
         Booking booking = bookingRepository
-            .findById(id)
+            .findById(bookingUserPK.getBooking())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking not found!"));
+        User user = userRepository
+            .findById(bookingUserPK.getUser())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking not found!"));
 
         bookingUser.setBooking(booking);
@@ -64,35 +93,14 @@ public class BookingUserController {
         }
     }
 
-    @PutMapping(path="/{id}")
-    public ResponseEntity<?> updateBookingUser(@PathVariable int id, @RequestBody BookingUser bookingUserDetails) throws ResponseStatusException {
+    @DeleteMapping(path = {
+        "/user/{userId}/booking/{bookingId}",
+        "/booking/{bookingId}/user/{userId}"
+    })
+    public ResponseEntity<?> deleteBookingUser(@PathVariable int bookingId, @PathVariable int userId)
+            throws ResponseStatusException {
         BookingUser bookingUser = bookingUserDB
-            .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingUser not found!")
-        );
-
-        bookingUser.setUser(bookingUserDetails.getUser());
-
-        try {
-            BookingUser updatedBookingUser = bookingUserDB.save(bookingUser);
-            return new ResponseEntity<>(updatedBookingUser, HttpStatus.NO_CONTENT);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                e.getMessage()
-            );
-        } catch (DataIntegrityViolationException e) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                e.getMessage()
-            );
-        }
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteBookingUser(@PathVariable int id) throws ResponseStatusException {
-        BookingUser bookingUser = bookingUserDB
-            .findById(id)
+            .findById(new BookingUserPK(bookingId, userId))
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingUser could not be found!"));
 
         try {

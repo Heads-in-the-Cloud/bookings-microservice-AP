@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 // Data transfer object
 class Guest {
+    public int booking;
     public String email;
     public String phone;
 
@@ -42,10 +43,10 @@ public class GuestController {
         return bookingGuestDB.findAll();
     }
 
-    @PostMapping(path = "/{id}")
-    public ResponseEntity<?> createBookingGuest(@PathVariable int id, @RequestBody Guest guest) {
+    @PostMapping(path = "")
+    public ResponseEntity<?> createBookingGuest(@RequestBody Guest guest) {
         BookingGuest bookingGuest = new BookingGuest();
-        Booking booking = bookingRepository.findById(id)
+        Booking booking = bookingRepository.findById(guest.booking)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking not found!"));
 
         bookingGuest.setBooking(booking);

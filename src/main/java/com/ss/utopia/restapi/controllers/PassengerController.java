@@ -1,5 +1,7 @@
 package com.ss.utopia.restapi.controllers;
 
+import java.sql.Date;
+
 import com.ss.utopia.restapi.dao.PassengerRepository;
 import com.ss.utopia.restapi.models.Passenger;
 import com.ss.utopia.restapi.services.ResetAutoCounterService;
@@ -10,6 +12,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+class PassengerPK {
+    public int booking;
+    public String givenName;
+    public String familyName;
+    public Date dateOfBirth;
+    public String gender;
+    public String address;
+}
 
 @RestController
 @RequestMapping(path="/passengers")
