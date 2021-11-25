@@ -63,8 +63,8 @@ public class BookingController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking not found!")
         );
 
-        booking.setIsActive(bookingDetails.getIsActive());
-        booking.setConfirmationCode(bookingDetails.getConfirmationCode());
+        if (bookingDetails.getIsActive() != null) booking.setIsActive(bookingDetails.getIsActive());
+        if (bookingDetails.getConfirmationCode() != null) booking.setConfirmationCode(bookingDetails.getConfirmationCode());
 
         try {
             Booking updatedBooking = bookingDB.save(booking);

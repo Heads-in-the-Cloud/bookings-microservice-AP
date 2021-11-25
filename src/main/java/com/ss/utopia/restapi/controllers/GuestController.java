@@ -75,8 +75,8 @@ public class GuestController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingGuest not found!")
         );
 
-        bookingGuest.setEmail(guest.email);
-        bookingGuest.setPhone(guest.phone);
+        if (guest.email != null) bookingGuest.setEmail(guest.email);
+        if (guest.phone != null) bookingGuest.setPhone(guest.phone);
 
         try {
             BookingGuest updatedBookingGuest = bookingGuestDB.save(bookingGuest);

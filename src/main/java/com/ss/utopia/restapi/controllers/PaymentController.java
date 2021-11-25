@@ -79,8 +79,8 @@ public class PaymentController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingPayment not found!")
         );
 
-        bookingPayment.setRefunded(payment.refunded);
-        bookingPayment.setStripeId(payment.stripeId);
+        if (payment.refunded != null) bookingPayment.setRefunded(payment.refunded);
+        if (payment.stripeId != null) bookingPayment.setStripeId(payment.stripeId);
 
         try {
             BookingPayment updatedBookingPayment = bookingPaymentDB.save(bookingPayment);

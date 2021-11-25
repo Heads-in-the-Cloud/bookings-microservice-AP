@@ -15,6 +15,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import static com.ss.utopia.restapi.services.GetUserFromAuthHeader.getUserFromAuthHeader;
+
 @RestController
 @RequestMapping(path="/booking-users")
 public class BookingUserController {
@@ -23,10 +25,10 @@ public class BookingUserController {
     BookingUserRepository bookingUserDB;
 
     @Autowired
-    BookingRepository bookingRepository;
+    BookingRepository bookingDB;
 
     @Autowired
-    UserRepository userRepository;
+    UserRepository userDB;
 
     @GetMapping(path = {
         "/user/{userId}/booking/{bookingId}",
@@ -34,50 +36,76 @@ public class BookingUserController {
     })
     public ResponseEntity<BookingUser> getBookingUsers(@PathVariable int bookingId, @PathVariable int userId)
             throws ResponseStatusException {
-        return new ResponseEntity<>(
-            bookingUserDB.findById(
-                new BookingUserPK(bookingId, userId))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingUsers not found!")),
-                HttpStatus.OK
-            );
+
+        User user = getUserFromAuthHeader(userDB);
+
+        if (user.getRole().getId() == User.ADMIN || user.getId() == userId) {
+            return new ResponseEntity<>(
+                bookingUserDB.findById(
+                    new BookingUserPK(bookingId, userId))
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingUsers not found!")),
+                    HttpStatus.OK
+                );
+        }
+
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not allowed to see this booking user!");
     }
 
     @GetMapping(path="/booking/{id}")
     public ResponseEntity<Iterable<BookingUser>> getBookingUsersByBooking(@PathVariable int id) {
-        return new ResponseEntity<>(
-            bookingUserDB.findAllByBookingId(id),
-            HttpStatus.OK
-        );
+        User user = getUserFromAuthHeader(userDB);
+
+        if (user.getRole().getId() == User.ADMIN) {
+            return new ResponseEntity<>(
+                bookingUserDB.findAllByBookingId(id),
+                HttpStatus.OK
+            );
+        }
+
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not allowed to see this booking user!");
     }
 
     @GetMapping(path="/user/{id}")
     public ResponseEntity<Iterable<BookingUser>> getBookingUsersByUser(@PathVariable int id) {
-        return new ResponseEntity<>(
-            bookingUserDB.findAllByBookingId(id),
-            HttpStatus.OK
-        );
+        User user = getUserFromAuthHeader(userDB);
+
+        if (user.getRole().getId() == User.ADMIN || user.getId() == id) {
+            return new ResponseEntity<>(
+                bookingUserDB.findAllByUserId(id),
+                HttpStatus.OK
+            );
+        }
+
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not allowed to see these booking users!");
     }
 
     @GetMapping(path={"/all", ""})
     public ResponseEntity<Iterable<BookingUser>> getAllBookingUsers() {
-        return new ResponseEntity<>(
-            bookingUserDB.findAll(),
-            HttpStatus.OK
-        );
+        User user = getUserFromAuthHeader(userDB);
+
+        if (user.getRole().getId() == User.ADMIN) {
+            return new ResponseEntity<>(
+                bookingUserDB.findAll(),
+                HttpStatus.OK
+            );
+        }
+
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not allowed to see this user!");
     }
 
     @PostMapping(path = "")
     public ResponseEntity<?> createBookingUser(@RequestBody BookingUserPK bookingUserPK) {
         BookingUser bookingUser = new BookingUser();
-        Booking booking = bookingRepository
+        Booking booking = bookingDB
             .findById(bookingUserPK.getBooking())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking not found!"));
-        User user = userRepository
+        User user = userDB
             .findById(bookingUserPK.getUser())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Booking not found!"));
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "User not found!"));
 
         bookingUser.setBooking(booking);
         bookingUser.setUser(user);
+
         try {
             return new ResponseEntity<>(bookingUserDB.save(bookingUser), HttpStatus.CREATED);
         } catch (IllegalArgumentException e) {
@@ -103,19 +131,25 @@ public class BookingUserController {
             .findById(new BookingUserPK(bookingId, userId))
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "BookingUser could not be found!"));
 
-        try {
-            bookingUserDB.delete(bookingUser);
-            return new ResponseEntity<>(bookingUser, HttpStatus.NO_CONTENT);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                e.getMessage()
-            );
-        } catch (DataIntegrityViolationException e) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                e.getMessage()
-            );
+        User user = getUserFromAuthHeader(userDB);
+
+        if (user.getRole().getId() == User.ADMIN) {
+            try {
+                bookingUserDB.delete(bookingUser);
+                return new ResponseEntity<>(bookingUser, HttpStatus.NO_CONTENT);
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    e.getMessage()
+                );
+            } catch (DataIntegrityViolationException e) {
+                throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    e.getMessage()
+                );
+            }
         }
+
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not allowed to delete this user!");
     }
 }

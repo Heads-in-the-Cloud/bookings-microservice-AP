@@ -15,14 +15,14 @@ public class Booking implements Serializable {
     private Integer id;
 
     @Column(name = "is_active")
-    private boolean isActive;
+    private Boolean isActive;
 
     @Column(name = "confirmation_code")
     private String confirmationCode;
 
     public Booking() {};
 
-    public Booking(Integer id, boolean isActive, String code) {
+    public Booking(Integer id, Boolean isActive, String code) {
         this.id = id;
         this.isActive = isActive;
         this.confirmationCode = code;
@@ -31,8 +31,8 @@ public class Booking implements Serializable {
     public Integer getId() { return id; }
     public void setId(Integer id) { this.id = id; }
 
-    public boolean getIsActive() { return isActive; }
-    public void setIsActive(boolean isActive) { this.isActive = isActive; }
+    public Boolean getIsActive() { return isActive; }
+    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
 
     public String getConfirmationCode() { return confirmationCode; }
     public void setConfirmationCode(String confirmationCode) { this.confirmationCode = confirmationCode; }

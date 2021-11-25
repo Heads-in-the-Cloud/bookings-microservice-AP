@@ -73,12 +73,12 @@ public class PassengerController {
         Passenger passenger = passengerDB.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Passenger not found!"));
 
-        passenger.setAddress(passengerDetails.getAddress());
-        passenger.setGender(passengerDetails.getGender());
-        passenger.setDateOfBirth(passengerDetails.getDateOfBirth());
-        passenger.setFamilyName(passengerDetails.getFamilyName());
-        passenger.setGivenName(passengerDetails.getGivenName());
-        passenger.setBooking(passengerDetails.getBooking());
+        if (passengerDetails.getAddress() != null) passenger.setAddress(passengerDetails.getAddress());
+        if (passengerDetails.getGender() != null) passenger.setGender(passengerDetails.getGender());
+        if (passengerDetails.getDateOfBirth() != null) passenger.setDateOfBirth(passengerDetails.getDateOfBirth());
+        if (passengerDetails.getFamilyName() != null) passenger.setFamilyName(passengerDetails.getFamilyName());
+        if (passengerDetails.getGivenName() != null) passenger.setGivenName(passengerDetails.getGivenName());
+        if (passengerDetails.getBooking() != null) passenger.setBooking(passengerDetails.getBooking());
 
         try {
             Passenger updatedPassenger = passengerDB.save(passenger);
