@@ -39,7 +39,7 @@ public class AgentController {
 
         User user = getUserFromAuthHeader(userDB);
 
-        if (user.getRole().getId() == User.ADMIN || user.getId() == userId) {
+        if (user.getRole().getName().equals("ADMIN") || user.getId() == userId) {
             return new ResponseEntity<>(
                 bookingAgentDB.findById(
                     new BookingAgentPK(bookingId, userId))
@@ -55,7 +55,7 @@ public class AgentController {
     public ResponseEntity<Iterable<BookingAgent>> getBookingAgentByBooking(@PathVariable int id) {
         User user = getUserFromAuthHeader(userDB);
 
-        if (user.getRole().getId() == User.ADMIN) {
+        if (user.getRole().getName().equals("ADMIN")) {
             return new ResponseEntity<>(
                 bookingAgentDB.findAllByBookingId(id),
                 HttpStatus.OK
@@ -69,7 +69,7 @@ public class AgentController {
     public ResponseEntity<Iterable<BookingAgent>> getBookingAgentsByAgent(@PathVariable int id) {
         User user = getUserFromAuthHeader(userDB);
 
-        if (user.getRole().getId() == User.ADMIN || user.getId() == id) {
+        if (user.getRole().getName().equals("ADMIN") || user.getId() == id) {
             return new ResponseEntity<>(
                 bookingAgentDB.findAllByAgentId(id),
                 HttpStatus.OK
@@ -83,7 +83,7 @@ public class AgentController {
     public ResponseEntity<Iterable<BookingAgent>> getAllAgent() {
         User user = getUserFromAuthHeader(userDB);
 
-        if (user.getRole().getId() == User.ADMIN) {
+        if (user.getRole().getName().equals("ADMIN")) {
             return new ResponseEntity<>(
                 bookingAgentDB.findAll(),
                 HttpStatus.OK
@@ -133,7 +133,7 @@ public class AgentController {
 
         User user = getUserFromAuthHeader(userDB);
 
-        if (user.getRole().getId() == User.ADMIN) {
+        if (user.getRole().getName().equals("ADMIN")) {
             try {
                 bookingAgentDB.delete(bookingAgent);
                 return new ResponseEntity<>(bookingAgent, HttpStatus.NO_CONTENT);
