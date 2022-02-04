@@ -26,7 +26,7 @@ pipeline {
             echo(message: 'Running SonarQube Tests!')
             script{
             withSonarQubeEnv(installationName: 'SonarQube') {
-                sh(script: 'mvn clean verify sonar:sonar -Dsonar.projectKey=Users')
+                sh(script: 'mvn clean verify sonar:sonar -Dsonar.projectKey=Bookings')
             }}
         }}
         stage('Build') { steps{
