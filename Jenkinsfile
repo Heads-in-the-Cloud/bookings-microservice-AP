@@ -14,9 +14,10 @@ pipeline {
         def output = sh(returnStdout: true, script: aws_script)
         def repos = readJSON(text: readJSON(text: output).SecretString)
 
+        repo_host = repos["AP-Repo-Host"].toString()
         bookings_repo = repos["AP-Bookings-Repo"].toString()
+        docker_login = repos["AP-Docker-Login"].toString()
 
-        ARTIFACTORY_REPO = "aspms-bookings"
         ARTIFACTORY_PROJECT = "AP Microservices"
     }
 
@@ -35,22 +36,22 @@ pipeline {
         stage('Build') { steps{
             echo(message: 'Building!')
             sh(script: 'mvn clean package')
-            script { image = docker.build("ap-bookings:$COMMIT_HASH") }
+            script { image = docker.build("$bookings_repo:$COMMIT_HASH") }
         }}
         stage('Push to Artifactory') { steps{
             echo(message: 'Deploying!')
             rtUpload(
                 serverId: 'ap-jfrog-artifactory',
-                spec: '{"files": [{ "pattern": "target/*.jar", "target": "$ARTIFACTORY_REPO/" }]}',
+                spec: '{"files": [{ "pattern": "target/*.jar", "target": "$bookings_repo/" }]}',
                 project: "$ARTIFACTORY_PROJECT"
             )
         }}
         stage('ECR Push') { steps{
             echo(message: 'Pushing!')
             script{
-            docker.withRegistry("https://" + bookings_repo, "ecr:$AWS_REGION:AWS-Key") {
-                docker.image("ap-bookings:$COMMIT_HASH").push()
-                docker.image("ap-bookings:$COMMIT_HASH").push("latest")
+            docker.withRegistry("https://$repo_host", docker_login) {
+                docker.image("$bookings_repo:$COMMIT_HASH").push()
+                docker.image("$bookings_repo:$COMMIT_HASH").push("latest")
             }}
         }}
         stage('Service Deployment') { steps{
